@@ -15,20 +15,19 @@
 namespace Utility
 {
 
+
+class Bitmap
+{
 using u_short = unsigned short;
 using u_long = unsigned long;
 using u_int = unsigned int;
 
-class Bitmap
-{
 private:
 
     static const int HEADER_SIZE = 54;          // ヘッダのサイズ 54 = 14 + 40
     static const int INFO_HEADER_SIZE = 40;     // 情報ヘッダのサイズ
     static const int PALLET_SIZE = 1024;        // パレットのサイズ
     static const u_int FILE_TYPE = 0x4d42;      // ファイルタイプ("BM")
-    // static const int MAX_WIDTH = 1000;          // 幅(pixel)の上限
-    // static const int MAX_HEIGHT = 1000;         // 高さ(pixel) の上限
 
     struct Header
     {
@@ -43,6 +42,12 @@ private:
         u_int x_ppm;                            // 水平解像度 (ppm)
         u_int y_ppm;                            // 垂直解像度 (ppm)
     };
+
+
+    char data : 1;
+    char dat : 4;
+    char d : 8;
+
 
     struct Image
     {
@@ -59,8 +64,8 @@ private:
         int32_t height;
         int32_t width;
         std::vector<Color> data;
-        explicit Image(const int32_t& h, const int32_t& w, const std::vector<Color>& d)
-         : height(h), width(w), data(d)
+        explicit Image(const int32_t& h, const int32_t& w, std::vector<Color>&& d)
+         : height(h), width(w), data(std::move(d))
         {}
     };
 
@@ -101,10 +106,9 @@ public:
             for (const auto& element : row)
                 data.push_back(Image::Color(static_cast<u_char>(element), static_cast<u_char>(element), static_cast<u_char>(element)));
 
-        std::unique_ptr<Image> image(new Image(image_height, image_width, data));
+        std::unique_ptr<Image> image(new Image(image_height, image_width, std::move(data)));
         std::unique_ptr<Bitmap> bitmap(new Bitmap(header, std::move(image)));
         return bitmap;
-        
     }
 
     static std::unique_ptr<Bitmap> load_bmp(const std::string& file_path)
@@ -152,7 +156,7 @@ public:
         std::fclose(file_ptr);
         delete[] row_data;
 
-        std::unique_ptr<Image> image(new Image(image_height, image_width, data));
+        std::unique_ptr<Image> image(new Image(image_height, image_width, std::move(data)));
         std::unique_ptr<Bitmap> bitmap(new Bitmap(header, std::move(image)));
         return bitmap;
     }
@@ -237,15 +241,15 @@ using namespace Utility;
 
 int main()
 {
-    auto bmp0 = Bitmap::load_bmp("./data/dog.bmp");
+    auto bmp0 = Bitmap::load_bmp("../data/dog.bmp");
     bmp0->describe();
-    bmp0->to_bmp("./data/origindog.bmp");
+    bmp0->to_bmp("../data/origindog.bmp");
 
-    std::vector<std::vector<int>> input(1000, std::vector<int>(1000, 255));
+    std::vector<std::vector<int>> input(1000, std::vector<int>(1000, 100));
 
     auto bmp1 = Bitmap::create_bmp(input);
     bmp1->describe();
-    bmp1->to_bmp("./data/sample.bmp");
+    bmp1->to_bmp("../data/sample.bmp");
 
     return 0;
 }
